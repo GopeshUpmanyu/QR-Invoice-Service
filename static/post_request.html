@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Data Processor</title>
+    <style>
+        /* Your CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        h1 {
+            background-color: #007BFF;
+            color: white;
+            padding: 15px;
+        }
+
+        form {
+            margin: 20px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>QR Data Processor</h1>
+    <form id="postForm">
+        <label for="s3_url">Enter S3 URL of PDF:</label>
+        <input type="text" id="s3_url" name="s3_url" value="https://qr-ocr-data.s3.ap-south-1.amazonaws.com/Abbott/Hard_Disk/20.10.2023/Akums/5100417682.PDF">
+        <br>
+        <button type="button" id="submitBtn">Process QR Data</button>
+    </form>
+    <table id="responseTable">
+        <thead>
+            <tr>
+                <th>Seller GSTIN</th>
+                <th>Buyer GSTIN</th>
+                <th>Document Number</th>
+                <th>Document Type</th>
+                <th>Document Date</th>
+                <th>Total Invoice Value</th>
+                <th>Item Count</th>
+                <th>Main HSN Code</th>
+                <th>IRN</th>
+                <th>IRN Date</th>
+                <th>S3 Link</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        // Add event listener for the submit button
+        document.getElementById("submitBtn").addEventListener("click", function () {
+            sendPostRequest();
+        });
+
+        // Function to send the POST request
+        function sendPostRequest() {
+            const s3Url = document.getElementById("s3_url").value;
+
+            fetch("http://127.0.0.1:8000/process_qr_data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ "s3_url": s3Url }),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    displayQRData(data);
+                })
+                .catch((error) => {
+                    document.getElementById("responseTable").textContent = "Error: " + error;
+                });
+        }
+
+        // Function to display the QR data in the table
+        function displayQRData(data) {
+            const tableBody = document.querySelector("#responseTable tbody");
+            tableBody.innerHTML = '';
+
+            data.forEach(item => {
+                const row = tableBody.insertRow();
+                row.insertCell().textContent = item.SellerGstin;
+                row.insertCell().textContent = item.BuyerGstin;
+                row.insertCell().textContent = item.DocNo;
+                row.insertCell().textContent = item.DocTyp;
+                row.insertCell().textContent = item.DocDt;
+                row.insertCell().textContent = item.TotInvVal;
+                row.insertCell().textContent = item.ItemCnt;
+                row.insertCell().textContent = item.MainHsnCode;
+                row.insertCell().textContent = item.Irn;
+                row.insertCell().textContent = item.IrnDt;
+                const s3LinkCell = row.insertCell();
+                s3LinkCell.innerHTML = `<a href="${item.s3_link}" target="_blank">View PDF</a>`;
+            });
+        }
+    </script>
+</body>
+</html>
